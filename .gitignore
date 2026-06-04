@@ -1,0 +1,8 @@
+/.venv
+/.vscode
+/BR232.mp4
+/video_carros.mp4
+/video_carros_2.mp4
+/yolo26n.pt
+/yolov8m.pt
+/__pycache__

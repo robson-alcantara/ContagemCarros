@@ -1,0 +1,5 @@
+opencv-python==4.13.0.92
+ultralytics==8.4.60
+mssql_python==1.8.0
+easyocr==1.7.2
+matplotlib==3.10.9
