@@ -6,7 +6,13 @@ O objetivo deste desafio é avaliar sua capacidade de desenvolver uma solução 
 
 ## Passos para a instalação
 
-Ter instalado o Python 3 e o PIP instalados
+- Ter instalado o Python 3 e o PIP instalados
+
+- Na pasta do projeto, executar os comandos abaixo:
+
+ ``python -m venv .venv`` 
+
+ ``.venv\Scripts\activate.ps1``  
 
 - Executar o comando abaixo para instalar as dependências
 
