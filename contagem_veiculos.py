@@ -1,5 +1,4 @@
 import os
-
 import cv2
 import easyocr
 import numpy as np
@@ -106,7 +105,6 @@ conn = None
 cursor = None
 
 video_path = 'BR232.mp4'
-#video_path = 'video_carros_2.mp4'
 
 def ensure_video_file(path: str = video_path) -> None:
     """Create a simple placeholder video when the input file is missing."""
@@ -158,6 +156,7 @@ def process_vehicles(results, counter, classes_map, frame, counted_list, reader)
         roi = frame[y1:y2, x1:x2].copy()
         plate_result = reader.readtext(roi)
 
+        #plate_text = get_plate_xp(roi, reader)
         plate_text = get_plate_text(plate_result)
 
         write_to_database(track_id, track_class, plate_text)
@@ -174,9 +173,11 @@ def get_plate_text(plate_result):
     plate_text = None
 
     for text in plate_result:
-        if len(text[1]) == 7 and any(char.isdigit() for char in text[1].strip()) and not " " in text[1]:
-            if text[1][0].isalpha() and text[1][1].isalpha() and text[1][2].isalpha() and text[1][3].isdigit() and text[1][5].isdigit() and text[1][6].isdigit():
-                plate_text = text[1].upper()
+        text_candidate= text[1].replace(" ", "")
+        if len(text_candidate) == 7:
+            if text_candidate[0].isalpha() and text_candidate[1].isalpha() and text_candidate[2].isalpha() and text_candidate[3].isdigit() and text_candidate[5].isdigit() and text_candidate[6].isdigit():
+                plate_text = text_candidate.upper()
+                print(f"Placa detectada: {plate_text}") 
                 break
     return plate_text
 
@@ -188,6 +189,60 @@ def bbox_for_track(counter, track_id: int):
             x1, y1, x2, y2 = map(int, box.tolist())
             return (x1, y1, x2, y2), int(cls_id), float(conf)
     return None
+
+def get_plate_xp(frame, reader):
+    # 1. Carrega a imagem e converte para escala de cinza
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    # 2. Aplica detecção de bordas e busca contornos (assumindo forma retangular)
+    bfilter = cv2.bilateralFilter(gray, 11, 17, 17)
+    edged = cv2.Canny(bfilter, 30, 200)
+    keypoints = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contours = keypoints[0]
+
+    # Filtra por contorno mais provável de placa (geralmente um retângulo de proporção específica)
+    contours = sorted(contours, key=cv2.contourArea, reverse=True)[:10]
+    location = None
+
+    for contour in contours:
+        approx = cv2.approxPolyDP(contour, 10, True)
+        if len(approx) == 4:
+            location = approx
+            break
+
+    # 3. Aplica máscara e corta a placa
+    if location is not None:
+        mask = np.zeros(gray.shape, np.uint8)
+        new_image = cv2.drawContours(mask, [location], 0, 255, -1)
+        new_image = cv2.bitwise_and(frame, frame, mask=mask)
+
+        (x, y) = np.where(mask == 255)
+
+        if len(x) > 0 and len(y) > 0:
+            (x1, y1) = (np.min(x), np.min(y))
+            (x2, y2) = (np.max(x), np.max(y))
+            cropped_image = gray[x1:x2+1, y1:y2+1]
+
+            cv2.imshow('Placa', cropped_image)
+
+            # 4. Passa a placa cortada para o EasyOCR
+            # reader = easyocr.Reader(['en'], gpu=False)
+            result = reader.readtext(cropped_image)
+            
+            # Mostra o texto identificado
+            plate_text = result[0][1] if result else None
+            print(f"License Plate Number: {plate_text}") 
+
+            final_plate_text = None
+
+            if plate_text is not None:
+                plate_text = plate_text.replace(" ", "")
+
+                if len(plate_text[1]) == 7 and any(char.isdigit() for char in plate_text[1].strip()) and not " " in plate_text[1]:
+                    if plate_text[1][0].isalpha() and plate_text[1][1].isalpha() and plate_text[1][2].isalpha() and plate_text[1][3].isdigit() and plate_text[1][5].isdigit() and plate_text[1][6].isdigit():
+                        final_plate_text = plate_text.upper()
+
+            return final_plate_text                                  
 
 if __name__ == '__main__':
     main()
