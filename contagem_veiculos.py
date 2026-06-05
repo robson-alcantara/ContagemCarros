@@ -118,24 +118,8 @@ def main() -> None:
             results = counter.process(frame)
             frame = results.plot_im
 
-            #model.track(frame, persist=True, show=False)
-            tracks = counter.tracks
-
             if counter.counted_ids != counted_list:
                 process_vehicles(results, counter, classes_map, clean_frame, counted_list, reader)
-
-            # for track in tracks:
-            #     if track.boxes.id is not None:
-            #         track_id = int(track.boxes.id.numpy()[0])
-            #         track_class_id = int(track.boxes.cls.numpy()[0])
-            #         track_conf = float(track.boxes.conf.numpy()[0])
-            #         track_class = classes_map.get(track_class_id, str(track_class_id))
-
-            #         if track_id not in track_list:
-            #             track_list.append(track_id)
-            #             #write_to_database(track_id, track_class)
-
-            #         print(f'Track ID: {track_id}, Class: {track_class}, Confidence: {track_conf}')
 
             if SHOW_GUI:
                 cv2.imshow('Contagem de Veiculos', frame)

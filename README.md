@@ -6,8 +6,18 @@ O objetivo deste desafio é avaliar sua capacidade de desenvolver uma solução 
 
 ## Passos para a instalação
 
-Ter instalado o Python 3 e o PIP
+Ter instalado o Python 3 e o PIP instalados
 
-Executar o comando abaixo para instalar as dependências
+- Executar o comando abaixo para instalar as dependências
 
 ``python -m pip install -r requirements.txt``
+
+- Executar a migration localizada em .\migrations\InitialMigration.sql
+
+- Adequar a string connection da linha 16 do arquivo contagem_veiculos.py
+
+- Adicionar o video BR232.mp4 à pasta do projeto
+
+- Executar o comando abaixo para executar a aplicação:
+
+``python contagem_veiculos.py``
