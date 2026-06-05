@@ -8,6 +8,70 @@ from ultralytics.solutions import object_counter
 from ultralytics.utils.checks import check_imshow
 import matplotlib.pyplot as plt
 
+def main() -> None:
+    global conn, cursor
+
+    conn, cursor = connect_to_database()
+    ensure_video_file()
+
+    line_points = [(0, 100), (1540, 500)]
+
+    classes_map = {
+        2: 'carro',
+        3: 'moto',
+        5: 'ônibus',
+        7: 'caminhão',
+    }
+
+    track_list = []
+    counted_list = []
+
+    counter = object_counter.ObjectCounter(
+        model='yolov8n.pt',
+        region=line_points,
+        classes=[2, 3, 5, 7],
+        show=False,
+        show_conf=True,
+        show_labels=True,
+        line_width=2,
+    )
+
+    reader = easyocr.Reader(["en"]) 
+
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        raise RuntimeError('Não foi possível abrir o vídeo')
+
+    try:
+        while cap.isOpened():
+            success, frame = cap.read()
+            if not success:
+                break
+
+            clean_frame = frame.copy()
+            results = counter.process(frame)
+            frame = results.plot_im
+
+            if counter.counted_ids != counted_list:
+                process_vehicles(results, counter, classes_map, clean_frame, counted_list, reader)
+
+            if SHOW_GUI:
+                cv2.imshow('Contagem de Veiculos', frame)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+            else:
+                plt.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+                plt.axis('off')
+                plt.show()
+    finally:
+        if cursor is not None:
+            cursor.close()
+        if conn is not None:
+            conn.close()
+        cap.release()
+        if SHOW_GUI:
+            cv2.destroyAllWindows()    
+
 SHOW_GUI = check_imshow(warn=True)
 
 
@@ -73,72 +137,6 @@ def write_to_database(track_id, track_class, plate_text):
     )
     conn.commit()
 
-
-def main() -> None:
-    global conn, cursor
-
-    conn, cursor = connect_to_database()
-    ensure_video_file()
-
-    line_points = [(0, 200), (1520, 500)]
-
-    classes_map = {
-        2: 'carro',
-        3: 'moto',
-        5: 'ônibus',
-        7: 'caminhão',
-    }
-
-    track_list = []
-    counted_list = []
-
-    counter = object_counter.ObjectCounter(
-        model='yolov8n.pt',
-        region=line_points,
-        classes=[2, 3, 5, 7],
-        show=False,
-        show_conf=True,
-        show_labels=True,
-        line_width=2,
-    )
-
-    reader = easyocr.Reader(["en"]) 
-
-    cap = cv2.VideoCapture(video_path)
-    if not cap.isOpened():
-        raise RuntimeError('Não foi possível abrir o vídeo')
-
-    try:
-        while cap.isOpened():
-            success, frame = cap.read()
-            if not success:
-                break
-
-            clean_frame = frame.copy()
-            results = counter.process(frame)
-            frame = results.plot_im
-
-            if counter.counted_ids != counted_list:
-                process_vehicles(results, counter, classes_map, clean_frame, counted_list, reader)
-
-            if SHOW_GUI:
-                cv2.imshow('Contagem de Veiculos', frame)
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    break
-            else:
-                plt.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-                plt.axis('off')
-                plt.show()
-    finally:
-        if cursor is not None:
-            cursor.close()
-        if conn is not None:
-            conn.close()
-        cap.release()
-        if SHOW_GUI:
-            cv2.destroyAllWindows()
-
-
 def process_vehicles(results, counter, classes_map, frame, counted_list, reader):
     print(f'Veículos contados: {results.in_count}')
     print(f'IDs contados: {counter.counted_ids}')
@@ -177,8 +175,9 @@ def get_plate_text(plate_result):
 
     for text in plate_result:
         if len(text[1]) == 7 and any(char.isdigit() for char in text[1].strip()) and not " " in text[1]:
-            plate_text = text[1]
-            break
+            if text[1][0].isalpha() and text[1][1].isalpha() and text[1][2].isalpha() and text[1][3].isdigit() and text[1][5].isdigit() and text[1][6].isdigit():
+                plate_text = text[1].upper()
+                break
     return plate_text
 
 def bbox_for_track(counter, track_id: int):
@@ -192,3 +191,5 @@ def bbox_for_track(counter, track_id: int):
 
 if __name__ == '__main__':
     main()
+
+
