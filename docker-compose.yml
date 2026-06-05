@@ -1,0 +1,13 @@
+services:
+  contagem-veiculos:
+    build: .
+    container_name: contagem-veiculos
+    env_file:
+      - .env.docker
+    environment:
+      HEADLESS: "1"
+      MPLBACKEND: Agg
+    volumes:
+      - ${VIDEO_PATH:-./BR232.mp4}:/app/BR232.mp4:ro
+    extra_hosts:
+      - host.docker.internal:host-gateway

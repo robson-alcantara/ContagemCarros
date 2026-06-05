@@ -1,0 +1,13 @@
+.venv
+.vscode
+__pycache__
+.git
+.gitignore
+.env
+.env.local
+.env.docker
+.env.example
+.env.docker.example
+docker-compose.yml
+*.mp4
+*.pt

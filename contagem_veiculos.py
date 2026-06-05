@@ -1,11 +1,16 @@
 import os
+
+os.environ.setdefault('MPLBACKEND', 'Agg')
+
 import cv2
 import easyocr
 import numpy as np
 from mssql_python import connect
 from ultralytics.solutions import object_counter
 from ultralytics.utils.checks import check_imshow
-import matplotlib.pyplot as plt
+
+HEADLESS = os.getenv('HEADLESS', '').lower() in ('1', 'true', 'yes')
+SHOW_GUI = False if HEADLESS else check_imshow(warn=True)
 
 def main() -> None:
     global conn, cursor
@@ -58,10 +63,6 @@ def main() -> None:
                 cv2.imshow('Contagem de Veiculos', frame)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
-            else:
-                plt.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-                plt.axis('off')
-                plt.show()
     finally:
         if cursor is not None:
             cursor.close()
@@ -69,25 +70,30 @@ def main() -> None:
             conn.close()
         cap.release()
         if SHOW_GUI:
-            cv2.destroyAllWindows()    
-
-SHOW_GUI = check_imshow(warn=True)
+            cv2.destroyAllWindows()
 
 
 def get_connection_string() -> str:
     """Build a SQL Server connection string that works in this environment."""
-    server = os.getenv('SQLSERVER_SERVER', 'NOTEBOOK2\\SQLEXPRESS')
+    server = os.getenv('SQLSERVER_SERVER', '.\\SQLEXPRESS')
     database = os.getenv('SQLSERVER_DATABASE', 'ContagemVeiculos')
     encrypt = os.getenv('SQLSERVER_ENCRYPT', 'no')
     trust_cert = os.getenv('SQLSERVER_TRUST_CERT', 'yes')
+    user = os.getenv('SQLSERVER_USER')
+    password = os.getenv('SQLSERVER_PASSWORD')
 
-    return (
-        f'Server={server};'
-        f'Database={database};'
-        'Trusted_Connection=yes;'
-        f'Encrypt={encrypt};'
-        f'TrustServerCertificate={trust_cert};'
-    )
+    parts = [
+        f'Server={server}',
+        f'Database={database}',
+        f'Encrypt={encrypt}',
+        f'TrustServerCertificate={trust_cert}',
+    ]
+    if user and password:
+        parts.extend([f'UID={user}', f'PWD={password}'])
+    else:
+        parts.append('Trusted_Connection=yes')
+
+    return ';'.join(parts) + ';'
 
 
 def connect_to_database():
@@ -164,10 +170,6 @@ def process_vehicles(results, counter, classes_map, frame, counted_list, reader)
 
         if SHOW_GUI:
             cv2.imshow('Veiculo', roi)
-        else:
-            plt.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-            plt.axis('off')
-            plt.show()    
 
 def get_plate_text(plate_result):
     plate_text = None
