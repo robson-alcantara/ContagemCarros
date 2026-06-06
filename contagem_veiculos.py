@@ -23,8 +23,8 @@ def main() -> None:
     classes_map = {
         2: 'carro',
         3: 'moto',
-        5: 'ônibus',
-        7: 'caminhão',
+        5: 'onibus',
+        7: 'caminhao',
     }
 
     counted_list = []
@@ -34,6 +34,8 @@ def main() -> None:
         region=line_points,
         classes=[2, 3, 5, 7],
         show=False,
+        show_in=True,
+        show_out=True,
         show_conf=True,
         show_labels=True,
         line_width=2,
@@ -54,6 +56,7 @@ def main() -> None:
             clean_frame = frame.copy()
             results = counter.process(frame)
             frame = results.plot_im
+            draw_count_overlay(frame, results, counter, classes_map)
 
             if counter.counted_ids != counted_list:
                 process_vehicles(results, counter, classes_map, clean_frame, counted_list, reader)
@@ -129,6 +132,38 @@ def ensure_video_file(path: str = video_path) -> None:
         writer.write(frame)
     writer.release()
 
+def draw_count_overlay(frame, results, counter, classes_map) -> None:
+    """Draw IN/OUT counters per tracked vehicle class."""
+    classwise_count = getattr(results, 'classwise_count', {}) or {}
+    labels = []
+
+    for class_id, display_name in classes_map.items():
+        model_name = counter.names.get(class_id, str(class_id))
+        counts = classwise_count.get(model_name, {})
+        in_count = int(counts.get('IN', 0) or 0)
+        out_count = int(counts.get('OUT', 0) or 0)
+        labels.append(f'{display_name}: IN {in_count} OUT {out_count}')
+
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 0.8
+    thickness = 2
+    padding = 12
+    line_height = 30
+    max_width = max(
+        cv2.getTextSize(label, font, font_scale, thickness)[0][0]
+        for label in labels
+    )
+    box_width = max_width + padding * 2
+    box_height = line_height * len(labels) + padding
+
+    overlay = frame.copy()
+    cv2.rectangle(overlay, (15, 15), (15 + box_width, 15 + box_height), (20, 20, 20), -1)
+    cv2.addWeighted(overlay, 0.65, frame, 0.35, 0, frame)
+
+    for index, label in enumerate(labels):
+        y = 15 + padding + 22 + index * line_height
+        cv2.putText(frame, label, (15 + padding, y), font, font_scale, (255, 255, 255), thickness, cv2.LINE_AA)
+
 def write_to_database(track_id, track_class, plate_text):
     """Insert one tracked vehicle into the SQL Server table."""
     if cursor is None or conn is None:
@@ -141,6 +176,8 @@ def write_to_database(track_id, track_class, plate_text):
     conn.commit()
 
 def process_vehicles(results, counter, classes_map, frame, counted_list, reader):
+    print(f'Contagem IN/OUT: IN={results.in_count} OUT={results.out_count}')
+    print_classwise_counts(results, counter, classes_map)
     print(f'Veículos contados: {results.in_count}')
     print(f'IDs contados: {counter.counted_ids}')
     diference = list(set(counter.counted_ids) - set(counted_list))
@@ -176,6 +213,16 @@ def process_vehicles(results, counter, classes_map, frame, counted_list, reader)
 
         if SHOW_GUI:
             cv2.imshow('Veiculo', roi)
+
+def print_classwise_counts(results, counter, classes_map) -> None:
+    classwise_count = getattr(results, 'classwise_count', {}) or {}
+    print('Contagem por classe:')
+    for class_id, display_name in classes_map.items():
+        model_name = counter.names.get(class_id, str(class_id))
+        counts = classwise_count.get(model_name, {})
+        in_count = int(counts.get('IN', 0) or 0)
+        out_count = int(counts.get('OUT', 0) or 0)
+        print(f'  {display_name}: IN={in_count} OUT={out_count}')
 
 def get_plate_text(plate_result):
     plate_text = None
