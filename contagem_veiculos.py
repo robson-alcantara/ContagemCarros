@@ -27,7 +27,6 @@ def main() -> None:
         7: 'caminhão',
     }
 
-    track_list = []
     counted_list = []
 
     counter = object_counter.ObjectCounter(
@@ -160,7 +159,14 @@ def process_vehicles(results, counter, classes_map, frame, counted_list, reader)
             continue
 
         roi = frame[y1:y2, x1:x2].copy()
-        plate_result = reader.readtext(roi)
+
+        gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+        black_white = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)[1]
+
+        #if SHOW_GUI:
+        #    cv2.imshow('black_white', black_white)        
+
+        plate_result = reader.readtext(black_white)
 
         #plate_text = get_plate_xp(roi, reader)
         plate_text = get_plate_text(plate_result)
@@ -175,11 +181,13 @@ def get_plate_text(plate_result):
     plate_text = None
 
     for text in plate_result:
+        prob = text[2]
         text_candidate= text[1].replace(" ", "")
         if len(text_candidate) == 7:
             if text_candidate[0].isalpha() and text_candidate[1].isalpha() and text_candidate[2].isalpha() and text_candidate[3].isdigit() and text_candidate[5].isdigit() and text_candidate[6].isdigit():
                 plate_text = text_candidate.upper()
                 print(f"Placa detectada: {plate_text}") 
+                print(f"Probabilidade: {prob:.2f}")
                 break
     return plate_text
 
