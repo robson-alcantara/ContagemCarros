@@ -1,6 +1,4 @@
 /.env
-/.env.docker
-/.env.local
 /.venv
 /.vscode
 /BR232.mp4

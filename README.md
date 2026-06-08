@@ -4,9 +4,13 @@
 
 O objetivo deste desafio e avaliar sua capacidade de desenvolver uma solução de Visão Computacional de ponta a ponta. Voce receberá o video e deverá extrair informações analíticas sobre o tráfego de veiculos em tempo real ou processado.
 
-## Passos para a instalação
+## Instalação
 
 - Ter instalado o Python 3 e o PIP.
+
+- Executar a migration localizada em `.\migrations\InitialMigration.sql`.
+
+### Passos para instalação local
 
 - Na pasta do projeto, executar os comandos abaixo:
 
@@ -24,9 +28,15 @@ python -m venv .venv
 python -m pip install -r requirements.txt
 ```
 
-- Executar a migration localizada em `.\migrations\InitialMigration.sql`.
-
 - Para executar localmente no Windows, use `.env.local` ou configure a connection string para `.\SQLEXPRESS`.
+
+- Executar a aplicação localmente:
+
+```powershell
+python contagem_veiculos.py
+```
+
+### Passos para instalação em docker
 
 - Para executar em Docker com SQL Server Express local, confira a porta TCP da instancia:
 
@@ -50,12 +60,6 @@ SQLSERVER_PASSWORD=sua_senha_real
 O SQL Server precisa estar com autenticacao mista habilitada, e o login informado precisa ter acesso ao banco `ContagemVeiculos`.
 
 - Adicionar o video `BR232.mp4` a pasta do projeto.
-
-- Executar a aplicação localmente:
-
-```powershell
-python contagem_veiculos.py
-```
 
 - Executar a aplicação com Docker:
 

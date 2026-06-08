@@ -112,7 +112,7 @@ def connect_to_database():
 conn = None
 cursor = None
 
-video_path = 'BR232.mp4'
+video_path = os.getenv('VIDEO_PATH')
 
 def ensure_video_file(path: str = video_path) -> None:
     """Create a simple placeholder video when the input file is missing."""
